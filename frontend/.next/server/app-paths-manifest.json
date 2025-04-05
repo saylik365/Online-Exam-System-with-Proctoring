@@ -1,5 +1,7 @@
 {
-  "/page": "app/page.js",
-  "/register/page": "app/register/page.js",
+  "/exams/create/page": "app/exams/create/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/exams/page": "app/exams/page.js",
+  "/exams/[id]/edit/page": "app/exams/[id]/edit/page.js",
   "/login/page": "app/login/page.js"
 }

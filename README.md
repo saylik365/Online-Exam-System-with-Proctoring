@@ -1,6 +1,6 @@
-# Online Exam Portal
+# ExamFlow
 
-A secure online examination platform with real-time proctoring capabilities.
+A modern, secure, and efficient online examination platform with advanced proctoring capabilities.
 
 ## Features
 
@@ -138,4 +138,57 @@ npm start
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Environment Setup and Security
+
+### Initial Setup
+1. Backend Setup
+   ```bash
+   cd backend
+   cp .env.example .env
+   ```
+   Update the following in `backend/.env`:
+   - Generate a new secure JWT secret: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+   - Set your MongoDB URI with proper credentials
+   - Add your RapidAPI key for Judge0
+   - Configure email settings if needed
+
+2. Frontend Setup
+   ```bash
+   cd frontend
+   cp .env.example .env.local
+   ```
+   Update the following in `frontend/.env.local`:
+   - Configure API URLs
+   - Add your Google Client ID
+   - Set any feature flags as needed
+
+### Security Best Practices
+1. NEVER commit `.env` files to version control
+2. Regularly rotate secrets and API keys
+3. Use strong, unique passwords for all services
+4. Keep environment files restricted to only necessary team members
+5. Use different credentials for development and production
+6. Monitor for any accidental commits of sensitive data
+
+
+Each service has an `.env.example` file that serves as a template. Copy these files and fill in your own values.
+
+## Development
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
+# Start backend
+cd backend
+npm run dev
+
+# Start frontend (in another terminal)
+cd frontend
+npm run dev
+``` 

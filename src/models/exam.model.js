@@ -1,27 +1,22 @@
 const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
-  question: {
+  text: {
     type: String,
-    required: true
-  },
-  type: {
-    type: String,
-    enum: ['multiple-choice', 'true-false', 'short-answer', 'essay'],
     required: true
   },
   options: [{
-    text: String,
-    isCorrect: Boolean
+    type: String,
+    required: true
   }],
-  correctAnswer: String,
-  points: {
+  correctAnswer: {
     type: Number,
-    required: true,
-    default: 1
+    required: true
   },
-  explanation: String,
-  image: String
+  marks: {
+    type: Number,
+    default: 1
+  }
 });
 
 const examSchema = new mongoose.Schema({
@@ -30,10 +25,14 @@ const examSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  description: String,
-  duration: {
-    type: Number, // in minutes
+  description: {
+    type: String,
     required: true
+  },
+  duration: {
+    type: Number,
+    required: true,
+    min: 1
   },
   startTime: {
     type: Date,
@@ -43,56 +42,77 @@ const examSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  questions: [{
-    question: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Question',
-      required: true
-    },
-    order: {
+  subject: {
+    type: String,
+    required: true
+  },
+  questionCriteria: {
+    easy: {
       type: Number,
-      required: true
+      default: 0
     },
-    points: {
+    medium: {
       type: Number,
-      required: true
+      default: 0
+    },
+    hard: {
+      type: Number,
+      default: 0
     }
+  },
+  questions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Question'
   }],
-  totalPoints: {
-    type: Number,
-    required: true
-  },
-  passingScore: {
-    type: Number,
-    required: true
-  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  department: {
+  allowedStudents: [{
+    student: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'started', 'completed'],
+      default: 'pending'
+    },
+    startedAt: Date,
+    completedAt: Date,
+    proctoringSessions: [{
+      startTime: Date,
+      endTime: Date,
+      incidents: [{
+        type: String,
+        details: String,
+        timestamp: Date,
+        severity: {
+          type: String,
+          enum: ['low', 'medium', 'high'],
+          default: 'low'
+        }
+      }]
+    }]
+  }],
+  status: {
     type: String,
-    required: true
+    enum: ['draft', 'upcoming', 'ongoing', 'completed'],
+    default: 'draft'
   },
-  course: {
-    type: String,
-    required: true
-  },
-  isActive: {
-    type: Boolean,
-    default: true
+  passingPercentage: {
+    type: Number,
+    default: 40,
+    min: 0,
+    max: 100
   },
   settings: {
-    allowCalculator: {
-      type: Boolean,
-      default: false
-    },
-    allowNotes: {
-      type: Boolean,
-      default: false
-    },
     shuffleQuestions: {
+      type: Boolean,
+      default: true
+    },
+    shuffleOptions: {
       type: Boolean,
       default: true
     },
@@ -100,200 +120,49 @@ const examSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
-    requireProctoring: {
-      type: Boolean,
-      default: true
-    },
-    // Additional settings
-    allowReview: {
-      type: Boolean,
-      default: false
-    },
-    reviewDuration: {
-      type: Number, // in minutes
-      default: 0
-    },
-    negativeMarking: {
-      type: Boolean,
-      default: false
-    },
-    negativeMarkingValue: {
-      type: Number,
-      default: 0
-    },
-    timePerQuestion: {
-      type: Number, // in minutes
-      default: 0
-    },
-    showTimer: {
-      type: Boolean,
-      default: true
-    },
-    showProgress: {
-      type: Boolean,
-      default: true
-    },
-    allowQuestionNavigation: {
-      type: Boolean,
-      default: true
-    },
-    requireAllQuestions: {
-      type: Boolean,
-      default: false
+    proctoring: {
+      enabled: {
+        type: Boolean,
+        default: true
+      },
+      webcam: {
+        type: Boolean,
+        default: true
+      },
+      screen: {
+        type: Boolean,
+        default: true
+      },
+      audio: {
+        type: Boolean,
+        default: true
+      },
+      tabFocus: {
+        type: Boolean,
+        default: true
+      }
     }
-  },
-  allowedStudents: [{
-    student: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'started', 'completed', 'disqualified'],
-      default: 'pending'
-    },
-    startTime: Date,
-    endTime: Date,
-    ipAddress: String,
-    browserInfo: String
-  }],
-  status: {
-    type: String,
-    enum: ['draft', 'scheduled', 'in-progress', 'completed', 'cancelled'],
-    default: 'draft'
-  },
-  // Additional fields
-  category: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  tags: [{
-    type: String,
-    trim: true
-  }],
-  instructions: {
-    type: String,
-    required: true
-  },
-  syllabus: [{
-    topic: String,
-    description: String
-  }],
-  statistics: {
-    totalAttempts: {
-      type: Number,
-      default: 0
-    },
-    averageScore: {
-      type: Number,
-      default: 0
-    },
-    passRate: {
-      type: Number,
-      default: 0
-    },
-    averageTime: {
-      type: Number,
-      default: 0
-    }
-  },
-  feedback: [{
-    student: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    comment: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }]
+  }
 }, {
   timestamps: true
 });
 
-// Calculate total points before saving
+// Virtual for exam status
+examSchema.virtual('currentStatus').get(function() {
+  const now = new Date();
+  if (now < this.startTime) return 'upcoming';
+  if (now > this.endTime) return 'completed';
+  return 'ongoing';
+});
+
+// Pre-save middleware to update status
 examSchema.pre('save', function(next) {
-  this.totalPoints = this.questions.reduce((total, question) => total + question.points, 0);
+  this.status = this.currentStatus;
   next();
 });
 
-// Method to check if exam is currently active
-examSchema.methods.checkIfActive = function() {
-  const now = new Date();
-  return now >= this.startTime && now <= this.endTime;
-};
-
-// Method to check if exam has started
-examSchema.methods.hasStarted = function() {
-  return new Date() >= this.startTime;
-};
-
-// Method to check if exam has ended
-examSchema.methods.hasEnded = function() {
-  return new Date() > this.endTime;
-};
-
-// Method to add a student to allowed students
-examSchema.methods.addStudent = function(studentId) {
-  if (!this.allowedStudents.some(s => s.student.toString() === studentId.toString())) {
-    this.allowedStudents.push({
-      student: studentId
-    });
-    return this.save();
-  }
-  return Promise.resolve(this);
-};
-
-// Method to update student status
-examSchema.methods.updateStudentStatus = function(studentId, status, ipAddress, browserInfo) {
-  const student = this.allowedStudents.find(s => s.student.toString() === studentId.toString());
-  if (student) {
-    student.status = status;
-    if (status === 'started') {
-      student.startTime = new Date();
-    } else if (status === 'completed' || status === 'disqualified') {
-      student.endTime = new Date();
-    }
-    if (ipAddress) student.ipAddress = ipAddress;
-    if (browserInfo) student.browserInfo = browserInfo;
-    return this.save();
-  }
-  return Promise.reject(new Error('Student not found in allowed students'));
-};
-
-// Method to add feedback
-examSchema.methods.addFeedback = function(studentId, rating, comment) {
-  this.feedback.push({
-    student: studentId,
-    rating,
-    comment
-  });
-  return this.save();
-};
-
-// Method to update statistics
-examSchema.methods.updateStatistics = function(score, timeTaken) {
-  this.statistics.totalAttempts += 1;
-  this.statistics.averageScore = 
-    (this.statistics.averageScore * (this.statistics.totalAttempts - 1) + score) / 
-    this.statistics.totalAttempts;
-  this.statistics.averageTime = 
-    (this.statistics.averageTime * (this.statistics.totalAttempts - 1) + timeTaken) / 
-    this.statistics.totalAttempts;
-  this.statistics.passRate = 
-    (this.allowedStudents.filter(s => s.status === 'completed').length / 
-    this.allowedStudents.length) * 100;
-  return this.save();
-};
+// Add index for efficient querying
+examSchema.index({ subject: 1, status: 1, startTime: 1 });
 
 const Exam = mongoose.model('Exam', examSchema);
-
 module.exports = Exam; 

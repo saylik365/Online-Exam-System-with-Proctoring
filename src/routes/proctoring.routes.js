@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Proctoring = require('../models/proctoring.model');
 const Exam = require('../models/exam.model');
-const { verifyToken, authorize } = require('../middleware/auth.middleware');
+const { verifyToken, isStudent } = require('../middleware/auth');
 
 // Start proctoring session
-router.post('/start', verifyToken, authorize('student'), async (req, res) => {
+router.post('/start', verifyToken, isStudent, async (req, res) => {
   try {
     const { examId } = req.body;
     
@@ -66,7 +66,7 @@ router.post('/start', verifyToken, authorize('student'), async (req, res) => {
 });
 
 // Report suspicious activity
-router.post('/report', verifyToken, authorize('student'), async (req, res) => {
+router.post('/report', verifyToken, isStudent, async (req, res) => {
   try {
     const { examId, session } = req.body;
     
@@ -191,7 +191,7 @@ router.post('/report', verifyToken, authorize('student'), async (req, res) => {
 });
 
 // End proctoring session
-router.post('/end', verifyToken, authorize('student'), async (req, res) => {
+router.post('/end', verifyToken, isStudent, async (req, res) => {
   try {
     const { examId, session } = req.body;
     

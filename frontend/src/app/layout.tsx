@@ -2,24 +2,33 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+import StyledComponentsRegistry from "@/lib/registry";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Online Exam Portal",
+  title: "ExamFlow",
   description: "A modern online examination platform",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
-        <Toaster />
+        <StyledComponentsRegistry>
+          <ThemeProvider>
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </ThemeProvider>
+        </StyledComponentsRegistry>
       </body>
     </html>
   );

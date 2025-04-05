@@ -1,44 +1,23 @@
 const mongoose = require('mongoose');
 
 const answerSchema = new mongoose.Schema({
-  questionId: {
+  question: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Question',
     required: true
   },
-  answer: {
-    type: mongoose.Schema.Types.Mixed,
+  selectedOption: {
+    type: Number,
     required: true
   },
   isCorrect: {
     type: Boolean,
     required: true
   },
-  pointsEarned: {
+  marks: {
     type: Number,
     required: true
-  },
-  timeSpent: {
-    type: Number, // in seconds
-    required: true
-  },
-  // Additional fields for better tracking
-  attempts: [{
-    answer: mongoose.Schema.Types.Mixed,
-    timestamp: Date,
-    isCorrect: Boolean
-  }],
-  reviewStatus: {
-    type: String,
-    enum: ['pending', 'reviewed', 'appealed'],
-    default: 'pending'
-  },
-  reviewNotes: String,
-  reviewedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  reviewDate: Date
+  }
 });
 
 const resultSchema = new mongoose.Schema({
@@ -53,19 +32,11 @@ const resultSchema = new mongoose.Schema({
     required: true
   },
   answers: [answerSchema],
-  startTime: {
-    type: Date,
-    required: true
-  },
-  endTime: {
-    type: Date,
-    required: true
-  },
-  totalPoints: {
+  score: {
     type: Number,
     required: true
   },
-  score: {
+  totalMarks: {
     type: Number,
     required: true
   },
@@ -75,194 +46,64 @@ const resultSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['passed', 'failed', 'pending', 'reviewed', 'appealed'],
+    enum: ['passed', 'failed'],
     required: true
   },
-  // Proctoring data
-  proctoringData: {
-    browserTabs: [{
-      url: String,
-      timestamp: Date,
-      duration: Number // in seconds
-    }],
-    faceDetection: [{
-      confidence: Number,
-      timestamp: Date,
-      faceCount: Number,
-      isViolation: Boolean
-    }],
-    audioLevels: [{
-      level: Number,
-      timestamp: Date,
-      isViolation: Boolean
-    }],
-    violations: [{
-      type: String,
-      timestamp: Date,
+  startTime: {
+    type: Date,
+    required: true
+  },
+  endTime: {
+    type: Date,
+    required: true
+  },
+  duration: {
+    type: Number, // in minutes
+    required: true
+  },
+  proctoringSummary: {
+    totalIncidents: {
+      type: Number,
+      default: 0
+    },
+    incidents: [{
+      type: {
+        type: String,
+        enum: ['tab_switch', 'face_not_visible', 'multiple_faces', 'audio_detection', 'screen_share_stopped'],
+        required: true
+      },
+      timestamp: {
+        type: Date,
+        required: true
+      },
       details: String,
       severity: {
         type: String,
-        enum: ['low', 'medium', 'high']
+        enum: ['low', 'medium', 'high'],
+        required: true
       }
     }],
-    systemInfo: {
-      ipAddress: String,
-      browserInfo: String,
-      osInfo: String,
-      deviceInfo: String
+    recordings: {
+      video: String, // URL to stored video recording
+      screen: String, // URL to stored screen recording
+      audio: String // URL to stored audio recording
     }
-  },
-  // Additional fields
-  isDisqualified: {
-    type: Boolean,
-    default: false
-  },
-  disqualificationReason: String,
-  disqualificationDetails: {
-    type: String,
-    timestamp: Date,
-    reportedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }
-  },
-  reviewedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  reviewNotes: String,
-  reviewDate: Date,
-  // Analytics data
-  analytics: {
-    timePerQuestion: {
-      type: Number,
-      default: 0
-    },
-    questionAttempts: {
-      type: Number,
-      default: 0
-    },
-    correctFirstAttempt: {
-      type: Number,
-      default: 0
-    },
-    timeDistribution: {
-      easy: Number,
-      medium: Number,
-      hard: Number
-    },
-    categoryPerformance: [{
-      category: String,
-      score: Number,
-      totalQuestions: Number
-    }],
-    difficultyPerformance: [{
-      difficulty: String,
-      score: Number,
-      totalQuestions: Number
-    }]
-  },
-  // Appeal information
-  appeal: {
-    status: {
-      type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending'
-    },
-    reason: String,
-    submittedAt: Date,
-    reviewedAt: Date,
-    reviewedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    reviewNotes: String
   }
 }, {
   timestamps: true
 });
 
-// Indexes for efficient querying
-resultSchema.index({ exam: 1, student: 1 }, { unique: true });
-resultSchema.index({ 'student': 1, 'status': 1 });
-resultSchema.index({ 'exam': 1, 'status': 1 });
-resultSchema.index({ 'createdAt': -1 });
+// Virtual for calculating percentage
+resultSchema.virtual('calculatePercentage').get(function() {
+  return (this.score / this.totalMarks) * 100;
+});
 
-// Method to calculate score and status
-resultSchema.methods.calculateResults = function() {
-  this.totalPoints = this.answers.reduce((total, answer) => total + answer.pointsEarned, 0);
-  this.percentage = (this.totalPoints / this.exam.totalPoints) * 100;
-  this.status = this.percentage >= this.exam.passingScore ? 'passed' : 'failed';
-};
-
-// Method to update analytics
-resultSchema.methods.updateAnalytics = function() {
-  const totalQuestions = this.answers.length;
-  const totalTime = this.endTime - this.startTime;
-  
-  this.analytics.timePerQuestion = totalTime / totalQuestions;
-  this.analytics.questionAttempts = this.answers.reduce((total, answer) => 
-    total + answer.attempts.length, 0);
-  this.analytics.correctFirstAttempt = this.answers.filter(answer => 
-    answer.attempts.length === 1 && answer.isCorrect).length;
-
-  // Calculate performance by category and difficulty
-  const categoryPerformance = {};
-  const difficultyPerformance = {};
-
-  this.answers.forEach(answer => {
-    const question = answer.questionId;
-    if (question.category) {
-      if (!categoryPerformance[question.category]) {
-        categoryPerformance[question.category] = { score: 0, total: 0 };
-      }
-      categoryPerformance[question.category].score += answer.pointsEarned;
-      categoryPerformance[question.category].total += 1;
-    }
-
-    if (question.difficulty) {
-      if (!difficultyPerformance[question.difficulty]) {
-        difficultyPerformance[question.difficulty] = { score: 0, total: 0 };
-      }
-      difficultyPerformance[question.difficulty].score += answer.pointsEarned;
-      difficultyPerformance[question.difficulty].total += 1;
-    }
-  });
-
-  this.analytics.categoryPerformance = Object.entries(categoryPerformance).map(([category, data]) => ({
-    category,
-    score: data.score,
-    totalQuestions: data.total
-  }));
-
-  this.analytics.difficultyPerformance = Object.entries(difficultyPerformance).map(([difficulty, data]) => ({
-    difficulty,
-    score: data.score,
-    totalQuestions: data.total
-  }));
-};
-
-// Method to submit appeal
-resultSchema.methods.submitAppeal = function(reason) {
-  this.appeal = {
-    status: 'pending',
-    reason,
-    submittedAt: new Date()
-  };
-  this.status = 'appealed';
-  return this.save();
-};
-
-// Method to review appeal
-resultSchema.methods.reviewAppeal = function(status, reviewedBy, notes) {
-  this.appeal.status = status;
-  this.appeal.reviewedAt = new Date();
-  this.appeal.reviewedBy = reviewedBy;
-  this.appeal.reviewNotes = notes;
-  this.status = status === 'approved' ? 'reviewed' : 'failed';
-  return this.save();
-};
+// Pre-save middleware to update percentage and status
+resultSchema.pre('save', function(next) {
+  this.percentage = this.calculatePercentage;
+  this.status = this.percentage >= 40 ? 'passed' : 'failed';
+  next();
+});
 
 const Result = mongoose.model('Result', resultSchema);
-
 module.exports = Result; 

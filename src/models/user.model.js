@@ -42,13 +42,15 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   otp: {
-    code: String,
+    token: String,
+    secret: String,
     expiresAt: Date
   },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   profilePicture: {
-    type: String
+    type: String,
+    default: null
   },
   department: {
     type: String,
@@ -59,9 +61,7 @@ const userSchema = new mongoose.Schema({
     sparse: true,
     trim: true
   },
-  lastLogin: {
-    type: Date
-  },
+  lastLogin: Date,
   isActive: {
     type: Boolean,
     default: true
@@ -83,16 +83,8 @@ const userSchema = new mongoose.Schema({
     trim: true
   }],
   examHistory: [{
-    exam: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Exam'
-    },
-    score: Number,
-    date: Date,
-    status: {
-      type: String,
-      enum: ['passed', 'failed', 'pending']
-    }
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Result'
   }],
   notifications: [{
     type: {
@@ -123,6 +115,10 @@ const userSchema = new mongoose.Schema({
       default: 'en'
     },
     timezone: String
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
@@ -199,7 +195,7 @@ userSchema.methods.markNotificationAsRead = function(notificationId) {
 userSchema.methods.generateAuthToken = function() {
   return jwt.sign(
     { 
-      _id: this._id,
+      userId: this._id,
       email: this.email,
       role: this.role
     },

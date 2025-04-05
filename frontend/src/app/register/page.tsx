@@ -2,80 +2,99 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { motion } from 'framer-motion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { authApi } from '@/lib/api';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
 export default function Register() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    role: '',
-    phoneNumber: '',
+    role: 'student'
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const validatePassword = (password: string) => {
+    const errors: string[] = [];
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    if (!/\d/.test(password)) {
+      errors.push('Password must contain at least one number');
+    }
+    if (!/[@$!%*?&]/.test(password)) {
+      errors.push('Password must contain at least one special character (@$!%*?&)');
+    }
+    return errors;
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setFormData(prev => ({ ...prev, password: newPassword }));
+    setPasswordErrors(validatePassword(newPassword));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: 'Error',
-        description: 'Passwords do not match',
-        variant: 'destructive',
-      });
-      setLoading(false);
+    setError(null);
+    
+    // Validate password before submission
+    const errors = validatePassword(formData.password);
+    if (errors.length > 0) {
+      setError(errors.join('\n'));
       return;
     }
+    
+    setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-          phoneNumber: formData.phoneNumber,
-        }),
-      });
+      const data = await authApi.register(formData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+      // Show OTP if it's included in the response (development only)
+      if (data.otp) {
+        toast({
+          title: 'Development OTP',
+          description: `Your OTP is: ${data.otp}`,
+          duration: 10000,
+        });
       }
 
       toast({
         title: 'Success',
         description: 'Registration successful! Please check your email for OTP.',
       });
-
-      // Add a small delay before redirecting to ensure the toast is visible
-      setTimeout(() => {
-        router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
-      }, 1000);
+      
+      // Redirect to OTP verification page
+      router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      console.error('Registration error:', error);
+      
+      // Display the specific error message from the backend
+      if (error.message === 'Email already registered') {
+        setError('This email is already registered. Please login instead.');
+      } else if (error.message.includes('Password must')) {
+        setError(error.message);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -83,91 +102,136 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <Card className="w-[400px]">
-        <CardHeader>
-          <CardTitle>Create an Account</CardTitle>
-          <CardDescription>
-            Enter your details to register
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="w-[400px]">
+          <CardHeader>
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <CardTitle>Create Account</CardTitle>
+              <CardDescription>
+                Enter your details to create a new account
+              </CardDescription>
+            </motion.div>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <ExclamationTriangleIcon className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  {error}
+                  {error.includes('already registered') && (
+                    <div className="mt-2">
+                      <Link href="/login" className="text-primary hover:underline">
+                        Click here to login
+                      </Link>
+                    </div>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-2"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="faculty">Faculty</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber">Phone Number</Label>
-              <Input
-                id="phoneNumber"
-                name="phoneNumber"
-                type="tel"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Registering...' : 'Register'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                <Input
+                  placeholder="Full Name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="space-y-2"
+              >
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
+                className="space-y-2"
+              >
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={handlePasswordChange}
+                  required
+                  className={passwordErrors.length > 0 ? 'border-red-500' : ''}
+                />
+                {formData.password && (
+                  <div className="text-sm space-y-1 mt-2">
+                    {passwordErrors.length > 0 ? (
+                      passwordErrors.map((error, index) => (
+                        <p key={index} className="text-red-500">{error}</p>
+                      ))
+                    ) : (
+                      <p className="text-green-500">Password meets all requirements</p>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+                className="space-y-2"
+              >
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="faculty">Faculty</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Creating Account...' : 'Create Account'}
+                </Button>
+              </motion.div>
+            </form>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <p className="text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link href="/login" className="text-primary hover:underline">
+                Login
+              </Link>
+            </p>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </div>
   );
 } 

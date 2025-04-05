@@ -1,21 +1,20 @@
 import * as React from "react"
+import styled from 'styled-components';
+import { motion } from 'framer-motion';
 
 import { cn } from "@/lib/utils"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
-Card.displayName = "Card"
+const Card = styled(motion.div)`
+  background: ${({ theme }) => theme.colors.background};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 6px;
+  padding: 1rem;
+  transition: ${({ theme }) => theme.animations.transition};
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+`;
 
 const CardHeader = React.forwardRef<
   HTMLDivElement,

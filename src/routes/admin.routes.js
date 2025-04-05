@@ -3,10 +3,10 @@ const router = express.Router();
 const User = require('../models/user.model');
 const Proctoring = require('../models/proctoring.model');
 const Result = require('../models/result.model');
-const { verifyToken, authorize } = require('../middleware/auth.middleware');
+const { verifyToken, isAdmin } = require('../middleware/auth');
 
 // Get all users with filters
-router.get('/users', verifyToken, authorize('admin'), async (req, res) => {
+router.get('/users', verifyToken, isAdmin, async (req, res) => {
   try {
     const { role, department, course, isActive, search } = req.query;
     const filter = {};
@@ -36,7 +36,7 @@ router.get('/users', verifyToken, authorize('admin'), async (req, res) => {
 });
 
 // Get user details by ID
-router.get('/users/:id', verifyToken, authorize('admin'), async (req, res) => {
+router.get('/users/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
       .select('-password')
@@ -53,7 +53,7 @@ router.get('/users/:id', verifyToken, authorize('admin'), async (req, res) => {
 });
 
 // Update user status (activate/deactivate)
-router.patch('/users/:id/status', verifyToken, authorize('admin'), async (req, res) => {
+router.patch('/users/:id/status', verifyToken, isAdmin, async (req, res) => {
   try {
     const { isActive } = req.body;
     
@@ -74,7 +74,7 @@ router.patch('/users/:id/status', verifyToken, authorize('admin'), async (req, r
 });
 
 // Get proctoring reports with filters
-router.get('/reports', verifyToken, authorize('admin'), async (req, res) => {
+router.get('/reports', verifyToken, isAdmin, async (req, res) => {
   try {
     const { examId, studentId, hasViolations, severity, startDate, endDate } = req.query;
     const filter = {};
@@ -135,7 +135,7 @@ router.get('/reports', verifyToken, authorize('admin'), async (req, res) => {
 });
 
 // Get detailed report by ID
-router.get('/reports/:id', verifyToken, authorize('admin'), async (req, res) => {
+router.get('/reports/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const report = await Proctoring.findById(req.params.id)
       .populate('exam', 'title description duration')

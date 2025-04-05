@@ -8,6 +8,7 @@ require('dotenv').config();
 // Import routes
 const userRoutes = require('./routes/user.routes');
 const examRoutes = require('./routes/exam.routes');
+const questionRoutes = require('./routes/question.routes');
 const proctoringRoutes = require('./routes/proctoring.routes');
 const adminRoutes = require('./routes/admin.routes');
 
@@ -20,7 +21,12 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
+}));
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
@@ -35,8 +41,9 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Routes
-app.use('/api/auth', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/exams', examRoutes);
+app.use('/api/questions', questionRoutes);
 app.use('/api/proctoring', proctoringRoutes);
 app.use('/api/admin', adminRoutes);
 

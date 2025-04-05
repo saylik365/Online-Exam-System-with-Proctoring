@@ -8,43 +8,32 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const { login } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      localStorage.setItem('token', data.token);
+      await login(email, password);
       toast({
         title: 'Success',
-        description: 'Login successful!',
+        description: 'Login successful! Redirecting to dashboard...',
       });
       router.push('/dashboard');
     } catch (error: any) {
+      console.error('Login error:', error);
       toast({
         title: 'Error',
-        description: error.message,
+        description: error.message || 'Login failed. Please check your credentials and try again.',
         variant: 'destructive',
       });
     } finally {
@@ -86,6 +75,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </motion.div>
               <motion.div
@@ -100,6 +90,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </motion.div>
               <motion.div

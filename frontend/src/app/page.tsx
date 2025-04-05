@@ -1,56 +1,129 @@
+'use client';
+
 import Link from "next/link"
+import styled from 'styled-components';
+import { motion } from 'framer-motion';
+import { fadeIn, slideIn } from '@/config/animations';
+
+const Header = styled.header`
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.background};
+  backdrop-filter: blur(8px);
+`;
+
+const Container = styled.div`
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 ${({ theme }) => theme.spacing.lg};
+`;
+
+const Nav = styled.nav`
+  display: flex;
+  align-items: center;
+  height: 3.5rem;
+  gap: ${({ theme }) => theme.spacing.lg};
+`;
+
+const Logo = styled(Link)`
+  font-weight: ${({ theme }) => theme.typography.fontWeight.bold};
+  color: ${({ theme }) => theme.colors.text};
+  text-decoration: none;
+`;
+
+const NavLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: ${({ theme }) => theme.typography.fontSize.medium};
+  text-decoration: none;
+  transition: ${({ theme }) => theme.animations.transition};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
+const Hero = styled(motion.section)`
+  padding: ${({ theme }) => theme.spacing.xxl} 0;
+  text-align: center;
+`;
+
+const Title = styled(motion.h1)`
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+const Subtitle = styled(motion.p)`
+  font-size: ${({ theme }) => theme.typography.fontSize.large};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  max-width: 42rem;
+  margin: 0 auto ${({ theme }) => theme.spacing.lg};
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md};
+  justify-content: center;
+`;
+
+const PrimaryButton = styled(Link)`
+  background: ${({ theme }) => theme.colors.primary};
+  color: white;
+  padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg}`};
+  border-radius: ${({ theme }) => theme.borderRadius.medium};
+  text-decoration: none;
+  transition: ${({ theme }) => theme.animations.transition};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.secondary};
+  }
+`;
+
+const SecondaryButton = styled(Link)`
+  background: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.text};
+  padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg}`};
+  border-radius: ${({ theme }) => theme.borderRadius.medium};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  text-decoration: none;
+  transition: ${({ theme }) => theme.animations.transition};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+  }
+`;
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <div className="mr-4 flex">
-            <Link className="mr-6 flex items-center space-x-2" href="/">
-              <span className="font-bold">Online Exam Portal</span>
-            </Link>
-            <nav className="flex items-center space-x-6 text-sm font-medium">
-              <Link
-                className="transition-colors hover:text-foreground/80 text-foreground"
-                href="/login"
-              >
-                Login
-              </Link>
-              <Link
-                className="transition-colors hover:text-foreground/80 text-foreground"
-                href="/register"
-              >
-                Register
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <Header>
+        <Container>
+          <Nav>
+            <Logo href="/">ExamFlow</Logo>
+            <div style={{ flex: 1 }} />
+            <NavLink href="/login">Login</NavLink>
+            <NavLink href="/register">Register</NavLink>
+          </Nav>
+        </Container>
+      </Header>
       <main className="flex-1">
-        <section className="space-y-6 pb-8 pt-6 md:pb-12 md:pt-10 lg:py-32">
-          <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
-            <h1 className="font-heading text-3xl sm:text-5xl md:text-6xl lg:text-7xl">
-              Welcome to Online Exam Portal
-            </h1>
-            <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
+        <Container>
+          <Hero initial="hidden" animate="visible" variants={fadeIn}>
+            <Title variants={slideIn}>
+              Welcome to ExamFlow
+            </Title>
+            <Subtitle variants={slideIn}>
               A modern platform for conducting online examinations with AI-powered proctoring.
-            </p>
-            <div className="space-x-4">
-              <Link
-                href="/register"
-                className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-              >
-                Get Started
-              </Link>
-              <Link
-                href="/about"
-                className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-              >
-                Learn More
-              </Link>
-            </div>
-          </div>
-        </section>
+            </Subtitle>
+            <ButtonGroup>
+              <PrimaryButton href="/register">Get Started</PrimaryButton>
+              <SecondaryButton href="/about">Learn More</SecondaryButton>
+            </ButtonGroup>
+          </Hero>
+        </Container>
         <section
           id="features"
           className="container space-y-6 bg-slate-50 py-8 dark:bg-transparent md:py-12 lg:py-24"

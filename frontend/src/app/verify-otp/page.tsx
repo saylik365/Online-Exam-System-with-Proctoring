@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { authApi } from '@/lib/api';
 
 export default function VerifyOTP() {
   const [otp, setOtp] = useState('');
@@ -45,22 +46,15 @@ export default function VerifyOTP() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, otp }),
-      });
+      const data = await authApi.verifyOTP({ email, otp });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to verify OTP');
+      // Store tokens and user data
+      localStorage.setItem('accessToken', data.accessToken);
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
       }
+      localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Store token and redirect to dashboard
-      localStorage.setItem('token', data.token);
       toast({
         title: 'Success',
         description: 'Email verified successfully!',
@@ -79,19 +73,7 @@ export default function VerifyOTP() {
 
   const handleResendOTP = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/users/resend-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to resend OTP');
-      }
+      await authApi.resendOTP({ email });
 
       toast({
         title: 'Success',
