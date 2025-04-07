@@ -16,81 +16,33 @@
       "static/chunks/main-app.js",
       "static/chunks/app/register/page.js"
     ],
-    "/verify-otp/page": [
+    "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/verify-otp/page.js"
+      "static/chunks/app/login/page.js"
     ],
     "/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/page.js"
     ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
-    ],
-    "/profile/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/profile/page.js"
-    ],
-    "/profile/edit/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/profile/edit/page.js"
-    ],
-    "/challenges/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/challenges/page.js"
-    ],
     "/exams/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
+      "static/css/app/exams/page.css",
       "static/chunks/app/exams/page.js"
-    ],
-    "/challenges/create/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/challenges/create/page.js"
-    ],
-    "/challenges/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/challenges/[id]/page.js"
-    ],
-    "/challenges/submissions/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/challenges/submissions/page.js"
-    ],
-    "/questions/create/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/questions/create/page.js"
-    ],
-    "/questions/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/questions/page.js"
-    ],
-    "/questions/[id]/edit/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/questions/[id]/edit/page.js"
     ],
     "/exams/create/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
+      "static/css/app/exams/create/page.css",
       "static/chunks/app/exams/create/page.js"
     ],
-    "/exams/[id]/edit/page": [
+    "/challenges/create/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/exams/[id]/edit/page.js",
-      "static/css/app/exams/[id]/edit/page.css"
+      "static/css/app/challenges/create/page.css",
+      "static/chunks/app/challenges/create/page.js"
     ],
     "/results/page": [
       "static/chunks/webpack.js",

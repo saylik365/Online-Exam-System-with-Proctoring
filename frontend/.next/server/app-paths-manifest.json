@@ -1,7 +1,8 @@
 {
-  "/exams/create/page": "app/exams/create/page.js",
+  "/login/page": "app/login/page.js",
   "/dashboard/page": "app/dashboard/page.js",
   "/exams/page": "app/exams/page.js",
-  "/exams/[id]/edit/page": "app/exams/[id]/edit/page.js",
-  "/login/page": "app/login/page.js"
+  "/challenges/create/page": "app/challenges/create/page.js",
+  "/exams/create/page": "app/exams/create/page.js",
+  "/results/page": "app/results/page.js"
 }

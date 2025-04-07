@@ -53,7 +53,7 @@ const compressResponse = compression();
 const validateRequest = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    logger.warn('Request validation failed:', errors.array());
+    logger.warn('Request validation failed:', { errors: errors.array(), body: req.body });
     return res.status(400).json({ errors: errors.array() });
   }
   next();

@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { authApi } from '@/lib/api';
 
@@ -48,7 +54,6 @@ export default function VerifyOTP() {
     try {
       const data = await authApi.verifyOTP({ email, otp });
 
-      // Store tokens and user data
       localStorage.setItem('accessToken', data.accessToken);
       if (data.refreshToken) {
         localStorage.setItem('refreshToken', data.refreshToken);
@@ -90,18 +95,14 @@ export default function VerifyOTP() {
     }
   };
 
-  if (!email) {
-    return null;
-  }
+  if (!email) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <Card className="w-[400px]">
-        <CardHeader>
+      <Card className="w-[400px] rounded-2xl">
+        <CardHeader className="rounded-t-2xl">
           <CardTitle>Verify Your Email</CardTitle>
-          <CardDescription>
-            Enter the OTP sent to {email}
-          </CardDescription>
+          <CardDescription>Enter the OTP sent to {email}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,4 +137,4 @@ export default function VerifyOTP() {
       </Card>
     </div>
   );
-} 
+}

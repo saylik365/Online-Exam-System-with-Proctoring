@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const logger = require('./utils/logger');
 const app = require('./app');
 const { connectDB } = require('./config/database');
-require('dotenv').config();
+require('dotenv').config(); // Load env variables from .env
 
 // Debug logging for environment variables
 logger.info('Environment variables loaded:', {
@@ -34,11 +34,11 @@ const startServer = async () => {
   try {
     // Connect to MongoDB first
     await connectDB();
-    
+
     // Start server only after successful DB connection
     const server = app.listen(PORT, HOST, () => {
       logger.info(`Server running on http://${HOST}:${PORT}`);
-      
+
       // Log all registered routes
       const routes = [];
       app._router.stack.forEach((middleware) => {
@@ -90,4 +90,4 @@ const startServer = async () => {
 };
 
 // Start the server
-startServer(); 
+startServer();

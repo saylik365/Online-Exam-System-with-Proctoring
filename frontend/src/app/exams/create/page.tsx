@@ -7,16 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
-import { examApi } from '@/lib/api';
 import BackToDashboard from '@/components/BackToDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -90,28 +82,10 @@ export default function CreateExam() {
   };
 
   const validateForm = () => {
-    if (!formData.title.trim()) {
+    if (!formData.title.trim() || !formData.subject.trim() || !formData.description.trim()) {
       toast({
         title: 'Error',
-        description: 'Please enter an exam title',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    if (!formData.subject.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter a subject',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    if (!formData.startTime || !formData.endTime) {
-      toast({
-        title: 'Error',
-        description: 'Please select both start and end times',
+        description: 'Please fill in all required fields',
         variant: 'destructive',
       });
       return false;
@@ -120,19 +94,10 @@ export default function CreateExam() {
     const startTime = new Date(formData.startTime);
     const endTime = new Date(formData.endTime);
 
-    if (startTime >= endTime) {
+    if (!formData.startTime || !formData.endTime || startTime >= endTime) {
       toast({
         title: 'Error',
-        description: 'End time must be after start time',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    if (!formData.description.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter a description',
+        description: 'Invalid start or end time',
         variant: 'destructive',
       });
       return false;
@@ -143,31 +108,22 @@ export default function CreateExam() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-
     try {
       const response = await fetch('http://localhost:5000/api/exams', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          title: formData.title,
-          subject: formData.subject,
-          duration: parseInt(formData.duration.toString()),
-          totalMarks: parseInt(formData.totalMarks.toString()),
-          passingPercentage: parseInt(formData.passingPercentage.toString()),
-          description: formData.description,
+          ...formData,
+          duration: +formData.duration,
+          totalMarks: +formData.totalMarks,
+          passingPercentage: +formData.passingPercentage,
           startTime: new Date(formData.startTime).toISOString(),
           endTime: new Date(formData.endTime).toISOString(),
-          questionCriteria: formData.questionCriteria,
-          questions: [] // Initially empty, questions will be added later
+          questions: [],
         }),
       });
 
@@ -176,8 +132,6 @@ export default function CreateExam() {
         throw new Error(errorData.message || 'Failed to create exam');
       }
 
-      const exam = await response.json();
-      
       toast({
         title: 'Success',
         description: 'Exam created successfully',
@@ -185,10 +139,9 @@ export default function CreateExam() {
 
       router.push('/exams');
     } catch (error: any) {
-      console.error('Error creating exam:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create exam',
+        description: error.message || 'Something went wrong',
         variant: 'destructive',
       });
     } finally {
@@ -198,162 +151,82 @@ export default function CreateExam() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-100 to-blue-100">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#f0f4ff] via-[#fdfbff] to-[#edf4ff] p-6">
       <BackToDashboard />
-      <div className="max-w-4xl mx-auto">
-        <Card>
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-5xl mx-auto"
+      >
+        <Card className="shadow-2xl rounded-3xl border border-gray-200 bg-white/80 backdrop-blur-md">
           <CardHeader>
-            <CardTitle>Create New Exam</CardTitle>
+            <CardTitle className="text-3xl font-semibold text-primary">
+              Create New Exam
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (minutes)</Label>
-                  <Input
-                    id="duration"
-                    name="duration"
-                    type="number"
-                    min="1"
-                    value={formData.duration}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="totalMarks">Total Marks</Label>
-                  <Input
-                    id="totalMarks"
-                    name="totalMarks"
-                    type="number"
-                    min="1"
-                    value={formData.totalMarks}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="passingPercentage">Passing Percentage</Label>
-                  <Input
-                    id="passingPercentage"
-                    name="passingPercentage"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.passingPercentage}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="startTime">Start Time</Label>
-                  <Input
-                    id="startTime"
-                    name="startTime"
-                    type="datetime-local"
-                    value={formData.startTime}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endTime">End Time</Label>
-                  <Input
-                    id="endTime"
-                    name="endTime"
-                    type="datetime-local"
-                    value={formData.endTime}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+                {[
+                  ['title', 'Title'],
+                  ['subject', 'Subject'],
+                  ['duration', 'Duration (minutes)', 'number'],
+                  ['totalMarks', 'Total Marks', 'number'],
+                  ['passingPercentage', 'Passing %', 'number'],
+                  ['startTime', 'Start Time', 'datetime-local'],
+                  ['endTime', 'End Time', 'datetime-local'],
+                ].map(([name, label, type = 'text']) => (
+                  <div key={name} className="flex flex-col gap-2">
+                    <Label htmlFor={name}>{label}</Label>
+                    <Input
+                      id={name}
+                      name={name}
+                      type={type}
+                      value={(formData as any)[name]}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                ))}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Label>Question Distribution</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="easyQuestions">Easy Questions</Label>
-                    <Input
-                      id="easyQuestions"
-                      type="number"
-                      min="0"
-                      value={formData.questionCriteria.easy}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        questionCriteria: {
-                          ...prev.questionCriteria,
-                          easy: parseInt(e.target.value)
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {['easy', 'medium', 'hard'].map((level) => (
+                    <div className="flex flex-col gap-2" key={level}>
+                      <Label htmlFor={`${level}Questions`}>
+                        {level.charAt(0).toUpperCase() + level.slice(1)} Questions
+                      </Label>
+                      <Input
+                        id={`${level}Questions`}
+                        type="number"
+                        min="0"
+                        value={(formData.questionCriteria as any)[level]}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            questionCriteria: {
+                              ...prev.questionCriteria,
+                              [level]: parseInt(e.target.value),
+                            },
+                          }))
                         }
-                      }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="mediumQuestions">Medium Questions</Label>
-                    <Input
-                      id="mediumQuestions"
-                      type="number"
-                      min="0"
-                      value={formData.questionCriteria.medium}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        questionCriteria: {
-                          ...prev.questionCriteria,
-                          medium: parseInt(e.target.value)
-                        }
-                      }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hardQuestions">Hard Questions</Label>
-                    <Input
-                      id="hardQuestions"
-                      type="number"
-                      min="0"
-                      value={formData.questionCriteria.hard}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        questionCriteria: {
-                          ...prev.questionCriteria,
-                          hard: parseInt(e.target.value)
-                        }
-                      }))}
-                      required
-                    />
-                  </div>
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
@@ -365,7 +238,7 @@ export default function CreateExam() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end space-x-4 pt-6">
                 <Button
                   type="button"
                   variant="secondary"
@@ -380,7 +253,7 @@ export default function CreateExam() {
             </form>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     </div>
   );
-} 
+}

@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import BackToDashboard from '@/components/BackToDashboard';
 import { fetchApi } from '@/lib/api';
+import { motion } from 'framer-motion';
 
 interface ChallengeFormData {
   title: string;
@@ -20,10 +21,7 @@ interface ChallengeFormData {
   category: string;
   starterCode: string;
   solution: string;
-  testCases: {
-    input: string;
-    output: string;
-  }[];
+  testCases: { input: string; output: string }[];
   timeLimit: number;
   memoryLimit: number;
 }
@@ -37,12 +35,12 @@ export default function CreateChallengePage() {
     title: '',
     description: '',
     difficulty: 'medium',
-    category: 'algorithms',
+    category: '',
     starterCode: '// Write your code here\n\n',
     solution: '',
     testCases: [{ input: '', output: '' }],
-    timeLimit: 1000, // 1 second
-    memoryLimit: 256, // 256 MB
+    timeLimit: 1000,
+    memoryLimit: 256,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,168 +80,195 @@ export default function CreateChallengePage() {
   const updateTestCase = (index: number, field: 'input' | 'output', value: string) => {
     setFormData(prev => ({
       ...prev,
-      testCases: prev.testCases.map((tc, i) => 
+      testCases: prev.testCases.map((tc, i) =>
         i === index ? { ...tc, [field]: value } : tc
       ),
     }));
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <motion.div
+      className="container mx-auto px-4 py-12 bg-gradient-to-tr from-slate-50 via-blue-50 to-purple-100 min-h-screen rounded-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
       <BackToDashboard />
-      <Card>
+      <Card className="shadow-2xl rounded-3xl bg-white/80 backdrop-blur border border-purple-200">
         <CardHeader>
-          <CardTitle>Create New Challenge</CardTitle>
+          <CardTitle className="text-4xl font-extrabold text-purple-800 tracking-tight">Create New Challenge</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                required
-                className="min-h-[100px]"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="difficulty">Difficulty</Label>
-                <Select
-                  value={formData.difficulty}
-                  onValueChange={(value: 'easy' | 'medium' | 'hard') => 
-                    setFormData(prev => ({ ...prev, difficulty: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select difficulty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="easy">Easy</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="hard">Hard</SelectItem>
-                  </SelectContent>
-                </Select>
+        <CardContent className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  required
+                  className="rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
+                />
               </div>
-
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label htmlFor="category">Category</Label>
                 <Input
                   id="category"
                   value={formData.category}
                   onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                   required
+                  className="rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                required
+                className="min-h-[120px] rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <Label htmlFor="difficulty">Difficulty</Label>
+                <Select
+                  value={formData.difficulty}
+                  onValueChange={(value: 'easy' | 'medium' | 'hard') =>
+                    setFormData(prev => ({ ...prev, difficulty: value }))
+                  }
+                >
+                  <SelectTrigger className="rounded-2xl bg-white/90 shadow-md focus:ring-purple-500">
+                    <SelectValue placeholder="Select difficulty" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="easy">Easy</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="hard">Hard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="timeLimit">Time Limit (ms)</Label>
+                  <Input
+                    id="timeLimit"
+                    type="number"
+                    value={formData.timeLimit}
+                    onChange={(e) => setFormData(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
+                    required
+                    min={100}
+                    max={5000}
+                    className="rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="memoryLimit">Memory Limit (MB)</Label>
+                  <Input
+                    id="memoryLimit"
+                    type="number"
+                    value={formData.memoryLimit}
+                    onChange={(e) => setFormData(prev => ({ ...prev, memoryLimit: parseInt(e.target.value) }))}
+                    required
+                    min={16}
+                    max={512}
+                    className="rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
               <Label htmlFor="starterCode">Starter Code</Label>
               <Textarea
                 id="starterCode"
                 value={formData.starterCode}
                 onChange={(e) => setFormData(prev => ({ ...prev, starterCode: e.target.value }))}
                 required
-                className="font-mono min-h-[150px]"
+                className="font-mono min-h-[150px] rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="solution">Solution</Label>
               <Textarea
                 id="solution"
                 value={formData.solution}
                 onChange={(e) => setFormData(prev => ({ ...prev, solution: e.target.value }))}
                 required
-                className="font-mono min-h-[150px]"
+                className="font-mono min-h-[150px] rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
               />
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <Label>Test Cases</Label>
-                <Button type="button" onClick={addTestCase}>
-                  Add Test Case
+                <Label className="text-lg font-semibold text-purple-700">Test Cases</Label>
+                <Button
+                  type="button"
+                  onClick={addTestCase}
+                  variant="outline"
+                  className="rounded-xl text-purple-700 border-purple-300 shadow-sm"
+                >
+                  + Add Test Case
                 </Button>
               </div>
               {formData.testCases.map((testCase, index) => (
-                <div key={index} className="grid grid-cols-2 gap-4 p-4 border rounded-lg">
-                  <div className="space-y-2">
+                <motion.div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-purple-200 rounded-2xl bg-white/90 shadow-md"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div className="space-y-3">
                     <Label htmlFor={`input-${index}`}>Input</Label>
                     <Textarea
                       id={`input-${index}`}
                       value={testCase.input}
                       onChange={(e) => updateTestCase(index, 'input', e.target.value)}
                       required
+                      className="rounded-2xl bg-muted/10 shadow-sm focus:ring-purple-500"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor={`output-${index}`}>Expected Output</Label>
                     <Textarea
                       id={`output-${index}`}
                       value={testCase.output}
                       onChange={(e) => updateTestCase(index, 'output', e.target.value)}
                       required
+                      className="rounded-2xl bg-muted/10 shadow-sm focus:ring-purple-500"
                     />
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="timeLimit">Time Limit (ms)</Label>
-                <Input
-                  id="timeLimit"
-                  type="number"
-                  value={formData.timeLimit}
-                  onChange={(e) => setFormData(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
-                  required
-                  min="100"
-                  max="5000"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="memoryLimit">Memory Limit (MB)</Label>
-                <Input
-                  id="memoryLimit"
-                  type="number"
-                  value={formData.memoryLimit}
-                  onChange={(e) => setFormData(prev => ({ ...prev, memoryLimit: parseInt(e.target.value) }))}
-                  required
-                  min="16"
-                  max="512"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-4 pt-8">
               <Button
                 type="button"
                 onClick={() => router.push('/challenges')}
+                variant="ghost"
+                className="rounded-xl text-purple-600 hover:bg-purple-50"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
+              >
                 {loading ? 'Creating...' : 'Create Challenge'}
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
-} 
+}

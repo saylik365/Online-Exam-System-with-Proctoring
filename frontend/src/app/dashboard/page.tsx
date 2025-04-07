@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { PieChart, Pie, Cell } from 'recharts';
+import { User } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
 
-// Sample data for charts - replace with real data from API
 const examData = [
   { name: 'Week 1', exams: 4 },
   { name: 'Week 2', exams: 3 },
@@ -23,12 +25,13 @@ const resultData = [
   { name: 'Failed', value: 25 },
 ];
 
-const COLORS = ['#0088FE', '#FF8042'];
+const COLORS = ['#10b981', '#ef4444'];
 
 export default function Dashboard() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, loading, logout } = useAuth();
+  const [showProfileCard, setShowProfileCard] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -39,24 +42,26 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       await logout();
-      toast({
-        title: 'Success',
-        description: 'Logged out successfully',
-      });
+      toast({ title: 'Success', description: 'Logged out successfully' });
       router.push('/login');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to logout',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to logout', variant: 'destructive' });
+    }
+  };
+
+  const startLiveExam = () => {
+    const hasLiveExam = true;
+    if (hasLiveExam) {
+      router.push('/exams/live');
+    } else {
+      toast({ title: 'No Exam', description: 'No live exam available currently', variant: 'destructive' });
     }
   };
 
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
       </div>
     );
   }
@@ -66,278 +71,172 @@ export default function Dashboard() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="container mx-auto p-6"
+      className="container mx-auto p-8 space-y-12 bg-gradient-to-tr from-[#dbeafe] via-[#f0f9ff] to-[#e0f2fe] rounded-xl min-h-screen"
     >
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <motion.h1
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-3xl font-bold"
+          className="text-4xl font-extrabold text-slate-800"
         >
           Welcome, {user.name}!
         </motion.h1>
+
         <motion.div
           initial={{ x: 20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex gap-4"
+          className="relative flex gap-4"
         >
-          <Button onClick={() => router.push('/profile')} variant="outline">
+          <Button variant="outline" onClick={() => router.push('/profile')} className="hover:scale-105 transition shadow">
             Edit Profile
           </Button>
-          <Button onClick={handleLogout} variant="outline">
+          <Button variant="destructive" onClick={handleLogout} className="hover:scale-105 transition shadow">
             Logout
           </Button>
+          <button
+            onClick={() => setShowProfileCard(!showProfileCard)}
+            className="p-2 rounded-full hover:bg-slate-200 transition border border-slate-300 bg-white"
+          >
+            <User className="w-5 h-5 text-slate-700" />
+          </button>
+
+          {showProfileCard && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute right-0 top-14 z-10 bg-white border border-slate-200 rounded-lg shadow-md p-4 w-64 space-y-1 text-sm text-gray-700"
+            >
+              <p><strong>Name:</strong> {user.name}</p>
+              <p><strong>Email:</strong> {user.email}</p>
+              <p><strong>Role:</strong> {user.role}</p>
+              <p><strong>Status:</strong> {user.isEmailVerified ? 'Verified' : 'Not Verified'}</p>
+            </motion.div>
+          )}
         </motion.div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Profile Card */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p><strong>Name:</strong> {user.name}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Role:</strong> {user.role}</p>
-                <p><strong>Status:</strong> {user.isEmailVerified ? 'Verified' : 'Not Verified'}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+      {/* Updated Card Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-8">
+        <AnimatedCard delay={0.35} className="min-h-[280px]">
+          <CardHeader><CardTitle>Challenges</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            {(user.role === 'faculty' || user.role === 'admin') && (
+              <SoftButton onClick={() => router.push('/challenges/create')}>Create Challenge</SoftButton>
+            )}
+            <SoftButton outline onClick={() => router.push('/challenges')}>Explore Challenges</SoftButton>
+            <SoftButton outline onClick={() => router.push('/challenges/submissions')}>View Submissions</SoftButton>
+          </CardContent>
+        </AnimatedCard>
 
-        {/* Coding Challenges Card - Available for all users */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.35 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Coding Challenges</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(user.role === 'faculty' || user.role === 'admin') && (
-                <>
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    onClick={() => router.push('/challenges/create')}
-                  >
-                    Create Challenge
-                  </Button>
-                  <Button 
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => router.push('/challenges/manage')}
-                  >
-                    Manage Challenges
-                  </Button>
-                </>
-              )}
-              <Button 
-                className="w-full"
-                variant={user.role === 'student' ? 'default' : 'outline'}
-                onClick={() => router.push('/challenges')}
-              >
-                {user.role === 'student' ? 'Practice Challenges' : 'View All Challenges'}
-              </Button>
-              <Button 
-                className="w-full"
-                variant="outline"
-                onClick={() => router.push('/challenges/submissions')}
-              >
-                View Submissions
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Faculty/Admin Features */}
         {(user.role === 'faculty' || user.role === 'admin') && (
-          <>
-            {/* Question Management */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Question Management</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    onClick={() => router.push('/questions/create')}
-                  >
-                    Create Question
-                  </Button>
-                  <Button 
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => router.push('/questions')}
-                  >
-                    Manage Questions
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Exam Management */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Exam Management</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    onClick={() => router.push('/exams/create')}
-                  >
-                    Create New Exam
-                  </Button>
-                  <Button 
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => router.push('/exams')}
-                  >
-                    View All Exams
-                  </Button>
-                  <Button 
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => router.push('/results')}
-                  >
-                    View Results
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Analytics */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="md:col-span-2 lg:col-span-3"
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Analytics Overview</CardTitle>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-6">
-                  <div className="h-[300px]">
-                    <h3 className="text-lg font-semibold mb-4">Exam Statistics</h3>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={examData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="exams" fill="#8884d8" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="h-[300px]">
-                    <h3 className="text-lg font-semibold mb-4">Pass/Fail Rate</h3>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={resultData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {resultData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </>
+          <AnimatedCard delay={0.4} className="min-h-[280px]">
+            <CardHeader><CardTitle>Questions</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <SoftButton onClick={() => router.push('/questions/create')}>Create Questions</SoftButton>
+              <SoftButton outline onClick={() => router.push('/questions')}>Manage Questions</SoftButton>
+            </CardContent>
+          </AnimatedCard>
         )}
 
-        {/* Student Features */}
+        {(user.role === 'faculty' || user.role === 'admin') && (
+          <AnimatedCard delay={0.5} className="min-h-[280px]">
+            <CardHeader><CardTitle>Exams</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <SoftButton onClick={() => router.push('/exams/create')}>Create Exam</SoftButton>
+              <SoftButton outline onClick={() => router.push('/exams')}>View Exams</SoftButton>
+              <SoftButton outline onClick={() => router.push('/results')}>View Results</SoftButton>
+            </CardContent>
+          </AnimatedCard>
+        )}
+
         {user.role === 'student' && (
-          <>
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Exam Center</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    onClick={() => router.push('/exams')}
-                  >
-                    Available Exams
-                  </Button>
-                  <Button 
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => router.push('/results')}
-                  >
-                    My Results
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Student Analytics */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="md:col-span-2 lg:col-span-3"
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Performance</CardTitle>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={examData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="exams" fill="#8884d8" name="Score" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </>
+          <AnimatedCard delay={0.4} className="min-h-[240px]">
+            <CardHeader><CardTitle>Exams</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <SoftButton onClick={() => router.push('/exams')}>Available Exams</SoftButton>
+              <SoftButton outline onClick={() => router.push('/results')}>View Results</SoftButton>
+              <SoftButton onClick={startLiveExam} outline>Start Live Exam</SoftButton>
+            </CardContent>
+          </AnimatedCard>
         )}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <AnimatedCard delay={0.6}>
+          <CardHeader><CardTitle>Exam Stats</CardTitle></CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={examData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="exams" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </AnimatedCard>
+
+        <AnimatedCard delay={0.7}>
+          <CardHeader><CardTitle>Pass/Fail Rate</CardTitle></CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={resultData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {resultData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </AnimatedCard>
       </div>
     </motion.div>
   );
-} 
+}
+
+// Reusable Animated Card
+const AnimatedCard = ({ children, delay = 0.3, className = '' }) => (
+  <motion.div
+    initial={{ y: 20, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    transition={{ delay, duration: 0.4, ease: 'easeOut' }}
+    whileHover={{ scale: 1.02 }}
+    className={`transition-all duration-300 ${className}`}
+  >
+    <Card className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-slate-200 hover:shadow-xl transition-all duration-300 ease-in-out">
+      {children}
+    </Card>
+  </motion.div>
+);
+
+// Reusable Soft Gradient Button
+const SoftButton = ({ children, onClick, outline = false }) => (
+  <Button
+    onClick={onClick}
+    className={`w-full rounded-xl px-4 py-2 font-semibold transition-transform hover:scale-105 hover:shadow-md ${
+      outline
+        ? 'border border-slate-400 text-slate-700 bg-white hover:bg-slate-100'
+        : 'bg-gradient-to-r from-blue-500 to-sky-400 text-white hover:from-sky-500 hover:to-blue-600'
+    }`}
+  >
+    {children}
+  </Button>
+);
