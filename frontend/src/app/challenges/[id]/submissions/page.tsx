@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'react-hot-toast';
+import { fetchApi } from '@/lib/api';
 
 interface TestCase {
   input: string;
@@ -31,19 +32,26 @@ interface Submission {
 }
 
 export default function SubmissionsPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id as string;
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!id || typeof id !== 'string') {
+      toast.error('Invalid challenge ID');
+      return;
+    }
     fetchSubmissions();
   }, [id]);
 
   const fetchSubmissions = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/challenges/${id}/submissions`);
-      if (!response.ok) throw new Error('Failed to fetch submissions');
-      const data = await response.json();
+      if (!id || typeof id !== 'string') {
+        toast.error('Invalid challenge ID');
+        return;
+      }
+      const data = await fetchApi(`api/challenges/${id}/submissions`);
       setSubmissions(data);
     } catch (error) {
       toast.error('Failed to load submissions');
@@ -185,4 +193,4 @@ export default function SubmissionsPage() {
       </div>
     </div>
   );
-} 
+}

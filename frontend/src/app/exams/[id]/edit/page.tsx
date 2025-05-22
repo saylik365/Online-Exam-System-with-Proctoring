@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import StudentSelector from '@/components/StudentSelector';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,7 @@ interface ExamFormData {
     hard: number;
   };
   selectedQuestions: string[];
+  selectedStudents: string[];
   proctoring: {
     webcamEnabled: boolean;
     tabSwitchingEnabled: boolean;
@@ -83,6 +85,7 @@ export default function EditExamPage() {
       hard: 0
     },
     selectedQuestions: [],
+    selectedStudents: [],
     proctoring: {
       webcamEnabled: false,
       tabSwitchingEnabled: false,
@@ -167,6 +170,7 @@ export default function EditExamPage() {
         duration: Math.max(1, Number(formData.duration)),
         totalMarks: Math.max(1, Number(formData.totalMarks)),
         passingPercentage: Math.min(100, Math.max(0, Number(formData.passingPercentage))),
+        questions: formData.selectedQuestions,
         questionCriteria: {
           easy: Math.max(0, Number(formData.questionCriteria.easy)),
           medium: Math.max(0, Number(formData.questionCriteria.medium)),
@@ -316,6 +320,7 @@ export default function EditExamPage() {
               <TabsList className="mb-6">
                 <TabsTrigger value="basic">Basic Details</TabsTrigger>
                 <TabsTrigger value="questions">Questions</TabsTrigger>
+                <TabsTrigger value="students">Students</TabsTrigger>
                 <TabsTrigger value="proctoring">Proctoring</TabsTrigger>
               </TabsList>
 
@@ -416,6 +421,24 @@ export default function EditExamPage() {
 
               <TabsContent value="questions">
                 <div className="space-y-6">
+
+              <TabsContent value="students" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Student Selection</CardTitle>
+                    <CardDescription>
+                      Select the students who will be allowed to take this exam
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <StudentSelector
+                      examId={id}
+                      selectedStudents={formData.selectedStudents}
+                      onStudentsChange={(students) => handleInputChange('selectedStudents', students)}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
                   <div className="question-distribution">
                     <div className="form-field">
                       <Label htmlFor="easyQuestions">Easy Questions</Label>
@@ -535,4 +558,4 @@ export default function EditExamPage() {
       </div>
     </div>
   );
-} 
+}

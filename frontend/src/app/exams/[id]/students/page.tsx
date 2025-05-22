@@ -74,6 +74,9 @@ export default function ManageStudents() {
   const fetchStudents = async () => {
     try {
       const response = await examApi.getRegisteredStudents(id);
+      if (!response || !Array.isArray(response)) {
+        throw new Error('Invalid response format from server');
+      }
       setStudents(response);
       setLoading(false);
     } catch (error: any) {
@@ -201,6 +204,134 @@ export default function ManageStudents() {
   };
 
   const filteredStudents = availableStudents.filter(student => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      student.name.toLowerCase().includes(searchLower) ||
+      student.email.toLowerCase().includes(searchLower)
+    );
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <BackToDashboard />
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Manage Students</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Add Student by Email */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Add Student by Email</h3>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <Input
+                    type="email"
+                    placeholder="Enter student email"
+                    value={newStudentEmail}
+                    onChange={(e) => setNewStudentEmail(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleAddStudent}>Add Student</Button>
+              </div>
+            </div>
+
+            {/* Add Multiple Students */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Add Multiple Students</h3>
+              <div className="space-y-4">
+                <Input
+                  type="text"
+                  placeholder="Search students..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+                  {filteredStudents.map((student) => (
+                    <div key={student._id} className="flex items-center space-x-2 py-2">
+                      <Checkbox
+                        id={student._id}
+                        checked={selectedStudents.includes(student._id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedStudents([...selectedStudents, student._id]);
+                          } else {
+                            setSelectedStudents(selectedStudents.filter(id => id !== student._id));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={student._id} className="flex-1">
+                        {student.name} ({student.email})
+                      </Label>
+                    </div>
+                  ))}
+                  {filteredStudents.length === 0 && (
+                    <p className="text-center text-gray-500 py-2">
+                      No students found
+                    </p>
+                  )}
+                </div>
+                <Button
+                  onClick={handleAddSelectedStudents}
+                  disabled={selectedStudents.length === 0}
+                >
+                  Add Selected Students
+                </Button>
+              </div>
+            </div>
+
+            {/* Registered Students */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Registered Students</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {students.map((registration) => (
+                    <TableRow key={registration._id}>
+                      <TableCell>{registration.student.name}</TableCell>
+                      <TableCell>{registration.student.email}</TableCell>
+                      <TableCell className="capitalize">{registration.status}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveStudent(registration.student._id)}
+                        >
+                          Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {students.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">
+                        No students registered
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )udent => {
     const isAlreadyRegistered = students.some(s => s.student._id === student._id);
     const matchesSearch = 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -353,4 +484,4 @@ export default function ManageStudents() {
       </Card>
     </div>
   );
-} 
+}

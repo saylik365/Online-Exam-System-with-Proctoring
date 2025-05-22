@@ -19,6 +19,9 @@ interface ChallengeFormData {
   description: string;
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
+  startDate: string;
+  endDate: string;
+  questions: string[];
   starterCode: string;
   solution: string;
   testCases: { input: string; output: string }[];
@@ -36,6 +39,9 @@ export default function CreateChallengePage() {
     description: '',
     difficulty: 'medium',
     category: '',
+    startDate: new Date().toISOString().slice(0, 16),
+    endDate: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
+    questions: [],
     starterCode: '// Write your code here\n\n',
     solution: '',
     testCases: [{ input: '', output: '' }],
@@ -48,9 +54,52 @@ export default function CreateChallengePage() {
     setLoading(true);
 
     try {
+      if (!formData.title.trim()) {
+        throw new Error('Title is required');
+      }
+      if (!formData.description.trim()) {
+        throw new Error('Description is required');
+      }
+      if (!formData.category.trim()) {
+        throw new Error('Category is required');
+      }
+      if (formData.timeLimit < 100 || formData.timeLimit > 5000) {
+        throw new Error('Time limit must be between 100ms and 5000ms');
+      }
+      if (formData.memoryLimit < 16 || formData.memoryLimit > 512) {
+        throw new Error('Memory limit must be between 16MB and 512MB');
+      }
+      if (!formData.solution.trim()) {
+        throw new Error('Solution is required');
+      }
+      if (formData.testCases.length === 0) {
+        throw new Error('At least one test case is required');
+      }
+      
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      
+      if (isNaN(startDate.getTime())) {
+        throw new Error('Invalid start date');
+      }
+      if (isNaN(endDate.getTime())) {
+        throw new Error('Invalid end date');
+      }
+      if (startDate >= endDate) {
+        throw new Error('End date must be after start date');
+      }
+
+      const challengePayload = {
+        ...formData,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        timeLimit: Math.max(100, Math.min(5000, formData.timeLimit)),
+        memoryLimit: Math.max(16, Math.min(512, formData.memoryLimit))
+      };
+
       await fetchApi('/api/challenges', {
         method: 'POST',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(challengePayload),
       });
 
       toast({
@@ -132,6 +181,31 @@ export default function CreateChallengePage() {
                 required
                 className="min-h-[120px] rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <Label htmlFor="startDate">Start Date *</Label>
+                <Input
+                  id="startDate"
+                  type="datetime-local"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  required
+                  className="rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="endDate">End Date *</Label>
+                <Input
+                  id="endDate"
+                  type="datetime-local"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                  required
+                  className="rounded-2xl bg-white/90 shadow-md focus:ring-purple-500"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

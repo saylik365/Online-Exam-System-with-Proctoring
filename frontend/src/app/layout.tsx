@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import StyledComponentsRegistry from "@/lib/registry";
+import Head from "next/head";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +21,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link
+          rel="preload"
+          href="/_next/static/css/app/layout.css"
+          as="style"
+        />
+      </head>
       <body className={inter.className}>
         <StyledComponentsRegistry>
           <ThemeProvider>
@@ -32,4 +40,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-} 
+}

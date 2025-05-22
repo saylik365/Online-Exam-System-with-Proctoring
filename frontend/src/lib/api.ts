@@ -188,10 +188,22 @@ export const examApi = {
     }),
 
   getAvailableStudents: () =>
-    fetchApi('/exams/available-students'),
+    fetchApi('/exams/available-students')
+      .then(response => {
+        if (!response || !Array.isArray(response)) {
+          throw new Error('Invalid response format from server');
+        }
+        return response;
+      }),
 
   getRegisteredStudents: (id: string) =>
-    fetchApi(`/exams/${id}/students`),
+    fetchApi(`/exams/${id}/students`)
+      .then(response => {
+        if (!response || !Array.isArray(response)) {
+          throw new Error('Invalid response format from server');
+        }
+        return response;
+      }),
 
   addStudents: (id: string, studentIds: string[]) =>
     fetchApi(`/exams/${id}/students`, {
