@@ -208,24 +208,29 @@ exports.getExams = async (req, res, next) => {
 exports.getExamById = async (req, res, next) => {
   try {
     const exam = await Exam.findById(req.params.id)
-      .populate('createdBy', 'name email')
-      .populate('allowedStudents.student', 'name email');
+      .populate('createdBy', 'name email');
 
     if (!exam) {
       return next(createError(404, 'Exam not found'));
     }
 
-    // Role-based access control
+    // Check if exam is published and within time window
     if (req.user.role === 'student') {
-      // Students can only view exams they're allowed to take
-      if (!exam.allowedStudents.some(s => s.student._id.toString() === req.user._id.toString())) {
-        logger.warn(`Unauthorized exam access attempt by student: ${req.user._id}`);
-        return next(createError(403, 'You are not allowed to view this exam'));
+      const now = new Date();
+      const startTime = new Date(exam.startTime);
+      const endTime = new Date(exam.endTime);
+
+      if (!exam.isPublished) {
+        return next(createError(403, 'This exam is not yet published'));
       }
-    } else if (req.user.role === 'teacher' && exam.createdBy._id.toString() !== req.user._id.toString()) {
-      // Teachers can only view their own exams
-      logger.warn(`Unauthorized exam access attempt by teacher: ${req.user._id}`);
-      return next(createError(403, 'You are not allowed to view this exam'));
+
+      if (now < startTime) {
+        return next(createError(400, 'Exam has not started yet'));
+      }
+
+      if (now > endTime) {
+        return next(createError(400, 'Exam has already ended'));
+      }
     }
 
     logger.info(`Exam ${exam._id} accessed by user: ${req.user._id}`);

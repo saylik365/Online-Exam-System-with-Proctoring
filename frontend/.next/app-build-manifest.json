@@ -1,35 +1,25 @@
 {
   "pages": {
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+    ],
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/page": [
+    "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
-    ],
-    "/register/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/register/page.js"
-    ],
-    "/verify-otp/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/verify-otp/page.js"
+      "static/chunks/app/login/page.js"
     ],
     "/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/page.js"
-    ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
     ],
     "/exams/page": [
       "static/chunks/webpack.js",
@@ -37,23 +27,11 @@
       "static/css/app/exams/page.css",
       "static/chunks/app/exams/page.js"
     ],
-    "/challenges/page": [
+    "/exams/[id]/take/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/challenges/page.css",
-      "static/chunks/app/challenges/page.js"
-    ],
-    "/questions/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/questions/page.css",
-      "static/chunks/app/questions/page.js"
-    ],
-    "/challenges/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/challenges/[id]/page.css",
-      "static/chunks/app/challenges/[id]/page.js"
+      "static/css/app/exams/[id]/take/page.css",
+      "static/chunks/app/exams/[id]/take/page.js"
     ]
   }
 }

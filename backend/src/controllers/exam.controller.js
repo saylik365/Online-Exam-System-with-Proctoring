@@ -1,6 +1,10 @@
 const Exam = require('../models/exam.model');
 const Question = require('../models/question.model');
 const User = require('../models/user.model');
+const Result = require('../models/result.model');
+const Submission = require('../models/submission.model');
+const createError = require('http-errors');
+const logger = require('../utils/logger');
 
 // Create a new exam
 exports.createExam = async (req, res) => {
@@ -26,27 +30,32 @@ exports.createExam = async (req, res) => {
 exports.getExams = async (req, res) => {
   try {
     let query = {};
-    
-    // Students can only see published exams they're allowed to take
+    // Students can only see published exams
     if (req.user.role === 'student') {
-      query = {
-        isPublished: true,
-        'allowedStudents.student': req.user._id
-      };
+      query = { isPublished: true };
     }
     // Faculty/admin can see all exams they created
     else if (req.user.role === 'faculty' || req.user.role === 'admin') {
       query = { createdBy: req.user._id };
     }
-
     const exams = await Exam.find(query)
       .populate('createdBy', 'name email')
       .sort({ startTime: 1 });
-
     // Update status of all fetched exams
     await Promise.all(exams.map(exam => exam.updateStatus()));
-
-    res.json(exams);
+    
+    if (req.user.role === 'student') {
+      const examsWithSubmissionStatus = await Promise.all(exams.map(async (exam) => {
+        const submission = await Submission.findOne({
+          exam: exam._id,
+          student: req.user._id
+        });
+        return { ...exam.toObject(), hasSubmitted: !!submission };
+      }));
+      res.json(examsWithSubmissionStatus);
+    } else {
+      res.json(exams);
+    }
   } catch (error) {
     console.error('Error fetching exams:', error);
     res.status(500).json({ message: error.message });
@@ -58,36 +67,21 @@ exports.getExamById = async (req, res) => {
   try {
     const exam = await Exam.findById(req.params.id)
       .populate('createdBy', 'name email')
-      .populate('questions')
-      .populate('allowedStudents.student', 'name email');
-
+      .populate('questions');
     if (!exam) {
       return res.status(404).json({ message: 'Exam not found' });
     }
-
     // Update exam status
     await exam.updateStatus();
-
-    // Students can only view published exams they're allowed to take
-    if (req.user.role === 'student') {
-      if (!exam.isPublished) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-      
-      const isAllowed = exam.allowedStudents.some(
-        s => s.student && s.student._id.toString() === req.user._id.toString()
-      );
-      
-      if (!isAllowed) {
-        return res.status(403).json({ message: 'You are not registered for this exam' });
-      }
+    // Students can only view published exams
+    if (req.user.role === 'student' && !exam.isPublished) {
+      return res.status(403).json({ message: 'Access denied' });
     }
     // Faculty/admin can only view their own exams
     else if (['faculty', 'admin'].includes(req.user.role) && 
         exam.createdBy._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
-
     res.json(exam);
   } catch (error) {
     console.error('Error fetching exam:', error);
@@ -117,10 +111,6 @@ exports.updateExam = async (req, res) => {
     // Update exam fields
     Object.assign(exam, req.body);
     await exam.save();
-    
-    // Populate necessary fields for response
-    await exam.populate('createdBy', 'name email');
-    await exam.populate('allowedStudents.student', 'name email');
     
     res.json(exam);
   } catch (error) {
@@ -225,138 +215,9 @@ exports.publishExam = async (req, res) => {
     await exam.updateStatus();
     await exam.save();
 
-    // Populate necessary fields for response
-    await exam.populate('createdBy', 'name email');
-    await exam.populate('questions');
-    await exam.populate('allowedStudents.student', 'name email');
-
     res.json(exam);
   } catch (error) {
     console.error('Error publishing exam:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Add students to exam
-exports.addStudents = async (req, res) => {
-  try {
-    const { studentIds } = req.body;
-    const exam = await Exam.findById(req.params.id);
-
-    if (!exam) {
-      return res.status(404).json({ message: 'Exam not found' });
-    }
-
-    // Only creator can add students
-    if (exam.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    // Initialize allowedStudents array if it doesn't exist
-    if (!exam.allowedStudents) {
-      exam.allowedStudents = [];
-    }
-
-    // Handle both email strings and user IDs
-    for (const studentIdentifier of studentIds) {
-      let studentId;
-      
-      // If the identifier is not a valid MongoDB ObjectId, treat it as an email
-      if (!studentIdentifier.match(/^[0-9a-fA-F]{24}$/)) {
-        const student = await User.findOne({ 
-          email: studentIdentifier,
-          role: 'student'
-        });
-        
-        if (!student) {
-          return res.status(404).json({ 
-            message: `No student found with email: ${studentIdentifier}` 
-          });
-        }
-        
-        studentId = student._id;
-      } else {
-        studentId = studentIdentifier;
-      }
-
-      // Check if student is already registered
-      const isRegistered = exam.allowedStudents.some(
-        entry => entry.student && entry.student.toString() === studentId.toString()
-      );
-
-      if (!isRegistered) {
-        exam.allowedStudents.push({
-          student: studentId,
-          status: 'pending'
-        });
-      }
-    }
-
-    await exam.save();
-    
-    // Populate student details for response
-    await exam.populate('allowedStudents.student', 'name email');
-    
-    res.json(exam.allowedStudents);
-  } catch (error) {
-    console.error('Error adding students:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Remove students from exam
-exports.removeStudents = async (req, res) => {
-  try {
-    const { studentIds } = req.body;
-    const exam = await Exam.findById(req.params.id);
-
-    if (!exam) {
-      return res.status(404).json({ message: 'Exam not found' });
-    }
-
-    // Only creator can remove students
-    if (exam.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    // Remove students
-    exam.allowedStudents = exam.allowedStudents.filter(
-      entry => !studentIds.includes(entry.student.toString())
-    );
-
-    await exam.save();
-    
-    // Populate student details for response
-    await exam.populate('allowedStudents.student', 'name email');
-    
-    res.json({
-      message: 'Students removed successfully',
-      allowedStudents: exam.allowedStudents
-    });
-  } catch (error) {
-    console.error('Error removing students:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get registered students for an exam
-exports.getRegisteredStudents = async (req, res) => {
-  try {
-    const exam = await Exam.findById(req.params.id)
-      .populate('allowedStudents.student', 'name email');
-
-    if (!exam) {
-      return res.status(404).json({ message: 'Exam not found' });
-    }
-
-    // Only creator can view registered students
-    if (exam.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    res.json(exam.allowedStudents);
-  } catch (error) {
-    console.error('Error fetching registered students:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -373,7 +234,7 @@ exports.getAllStudents = async (req, res) => {
       role: 'student',
       isActive: true 
     })
-    .select('name email')
+    .select('_id name email')
     .sort({ name: 1 });
 
     res.json(students);
@@ -387,8 +248,7 @@ exports.getAllStudents = async (req, res) => {
 exports.startExam = async (req, res) => {
   try {
     const exam = await Exam.findById(req.params.id)
-      .populate('questions')
-      .populate('allowedStudents.student', 'name email');
+      .populate('questions');
 
     if (!exam) {
       return res.status(404).json({ message: 'Exam not found' });
@@ -399,15 +259,6 @@ exports.startExam = async (req, res) => {
       return res.status(403).json({ message: 'This exam is not published yet' });
     }
 
-    // Check if student is allowed to take the exam
-    const isAllowed = exam.allowedStudents.some(
-      entry => entry.student && entry.student._id.toString() === req.user._id.toString()
-    );
-
-    if (!isAllowed) {
-      return res.status(403).json({ message: 'You are not registered for this exam' });
-    }
-
     // Check if exam is within the time window
     const now = new Date();
     if (now < exam.startTime) {
@@ -415,22 +266,6 @@ exports.startExam = async (req, res) => {
     }
     if (now > exam.endTime) {
       return res.status(403).json({ message: 'This exam has ended' });
-    }
-
-    // Check if student has already started the exam
-    const studentEntry = exam.allowedStudents.find(
-      entry => entry.student && entry.student._id.toString() === req.user._id.toString()
-    );
-
-    if (studentEntry.status === 'completed') {
-      return res.status(403).json({ message: 'You have already completed this exam' });
-    }
-
-    // Initialize exam session if not already started
-    if (studentEntry.status === 'pending') {
-      studentEntry.status = 'in-progress';
-      studentEntry.startTime = now;
-      await exam.save();
     }
 
     // Return exam details without answers
@@ -443,7 +278,7 @@ exports.startExam = async (req, res) => {
       endTime: exam.endTime,
       questions: exam.questions.map(q => ({
         _id: q._id,
-        question: q.question,
+        text: q.text,
         options: q.options,
         type: q.type
       }))
@@ -457,64 +292,110 @@ exports.startExam = async (req, res) => {
 };
 
 // Submit exam answers
-exports.submitExam = async (req, res) => {
+exports.submitExam = async (req, res, next) => {
   try {
     const { answers } = req.body;
-    const exam = await Exam.findById(req.params.id)
-      .populate('questions')
-      .populate('allowedStudents.student', 'name email');
+    const exam = await Exam.findById(req.params.id).populate('questions');
 
     if (!exam) {
-      return res.status(404).json({ message: 'Exam not found' });
+      return next(createError(404, 'Exam not found'));
     }
 
-    // Check if student is allowed to take the exam
-    const studentEntry = exam.allowedStudents.find(
-      entry => entry.student && entry.student._id.toString() === req.user._id.toString()
-    );
-
-    if (!studentEntry) {
-      return res.status(403).json({ message: 'You are not registered for this exam' });
-    }
-
-    // Check if exam is in progress
-    if (studentEntry.status !== 'in-progress') {
-      return res.status(403).json({ message: 'You have not started this exam or have already submitted it' });
+    // Check if exam is ongoing
+    const now = new Date();
+    if (!exam.isPublished || now < exam.startTime || now > exam.endTime) {
+      return next(createError(403, 'Exam is not active'));
     }
 
     // Calculate score
     let score = 0;
-    const totalQuestions = exam.questions.length;
-    
-    for (const question of exam.questions) {
-      const studentAnswer = answers[question._id];
-      
-      if (question.type === 'multiple-choice') {
-        if (studentAnswer === question.correctAnswer) {
-          score += 1;
-        }
-      } else if (question.type === 'true-false') {
-        if (studentAnswer === question.correctAnswer) {
-          score += 1;
-        }
+    let totalMarks = 0;
+
+    // Answers are expected as an object: { questionId: selectedOptionIndex }
+    const gradedAnswers = Object.keys(answers).map(questionId => {
+      // Find the question in the populated questions array by its ID
+      const question = exam.questions.find(q => q._id.toString() === questionId);
+      if (!question) {
+           console.warn(`Question with ID ${questionId} not found in exam ${exam._id}`);
+           return null; // Skip if question not found (shouldn't happen if data is consistent)
       }
-      // Add more question types as needed
-    }
 
-    // Update student's exam status
-    studentEntry.status = 'completed';
-    studentEntry.endTime = new Date();
-    studentEntry.score = (score / totalQuestions) * 100;
-    studentEntry.answers = answers;
-    
-    await exam.save();
+      totalMarks += question.marks;
+      const selectedOption = answers[questionId];
 
+      // Assuming selectedOption is the index of the chosen option (0, 1, 2, ...)
+      // And question.correctAnswer is the index of the correct option
+      const isCorrect = selectedOption === question.correctAnswer;
+
+      if (isCorrect) score += question.marks;
+
+      return {
+        question: questionId,
+        selectedOption: selectedOption, // Store the index
+        isCorrect: isCorrect,
+        marksEarned: isCorrect ? question.marks : 0
+      };
+    }).filter(a => a !== null);
+
+    // Calculate percentage and determine status before creating Result
+    const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
+    // Assuming passing percentage is stored in exam.passingPercentage
+    const status = percentage >= exam.passingPercentage ? 'passed' : 'failed';
+
+    // Create result
+    const result = new Result({
+      exam: exam._id,
+      student: req.user._id,
+      answers: gradedAnswers,
+      score: score,
+      totalMarks: totalMarks,
+      percentage: percentage, // Explicitly set percentage
+      status: status, // Explicitly set status
+      startTime: new Date(exam.startTime), // Use exam start time for result consistency
+      endTime: now,
+      duration: Math.round((now.getTime() - new Date(exam.startTime).getTime()) / 60000), // Duration in minutes
+      // Proctoring summary can be added here if needed from frontend payload
+      // proctoringSummary: req.body.proctoringSummary
+    });
+
+    await result.save();
+
+    // Note: Student status update logic removed as exams are open
+
+    logger.info(`Student ${req.user._id} submitted exam ${exam._id} with score ${score}/${totalMarks}`);
     res.json({
       message: 'Exam submitted successfully',
-      score: studentEntry.score
+      result: {
+        score: score,
+        totalMarks: totalMarks,
+        percentage: percentage,
+        status: status // Include status in the response
+      }
     });
+  } catch (err) {
+    logger.error(`Error submitting exam: ${err.message}`);
+    next(createError(500, 'Error submitting exam'));
+  }
+};
+
+// Get a student's submission for a specific exam
+exports.getStudentSubmission = async (req, res) => {
+  try {
+    const examId = req.params.examId;
+    const userId = req.user._id;
+
+    const submission = await Submission.findOne({
+      exam: examId,
+      student: userId
+    });
+
+    if (!submission) {
+      return res.status(404).json({ message: 'Submission not found for this exam and student.' });
+    }
+
+    res.status(200).json(submission);
   } catch (error) {
-    console.error('Error submitting exam:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching student submission:', error);
+    res.status(500).json({ message: 'Error fetching student submission.' });
   }
 }; 

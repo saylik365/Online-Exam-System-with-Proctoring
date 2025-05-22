@@ -74,20 +74,7 @@ const examSchema = new mongoose.Schema({
   isPublished: {
     type: Boolean,
     default: false
-  },
-  allowedStudents: [{
-    student: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'started', 'completed'],
-      default: 'pending'
-    },
-    startedAt: Date,
-    completedAt: Date
-  }]
+  }
 }, {
   timestamps: true
 });

@@ -53,9 +53,11 @@ export default function TakeExamPage() {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     fetchExam();
+    checkSubmission();
     return () => {
       // Cleanup media streams
       if (mediaStreamRef.current) {
@@ -68,7 +70,7 @@ export default function TakeExamPage() {
   }, []);
 
   useEffect(() => {
-    if (exam?.proctoring.tabSwitchingEnabled) {
+    if (exam?.proctoring?.tabSwitchingEnabled) {
       document.addEventListener('visibilitychange', handleTabSwitch);
       return () => document.removeEventListener('visibilitychange', handleTabSwitch);
     }
@@ -210,7 +212,8 @@ export default function TakeExamPage() {
         title: 'Success',
         description: 'Exam submitted successfully'
       });
-      router.push('/dashboard');
+      // Redirect to the result page after successful submission
+      router.push(`/exams/${id}/result`);
     } catch (error: any) {
       console.error('Error submitting exam:', error);
       toast({
@@ -220,6 +223,32 @@ export default function TakeExamPage() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const checkSubmission = async () => {
+    try {
+      const submission = await examApi.getStudentSubmission(id);
+      if (submission) {
+        setHasSubmitted(true);
+        toast({
+          title: 'Submission Check',
+          description: 'This exam has already been submitted'
+        });
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
+      console.error('Error checking submission:', error);
+      if (error.message && error.message.includes('Submission not found')) {
+        // This is expected if the user hasn't started/submitted the exam
+        console.log('No submission found yet.');
+      } else {
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'An error occurred',
+          variant: 'destructive'
+        });
+      }
     }
   };
 
@@ -274,8 +303,8 @@ export default function TakeExamPage() {
                         {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
                       </span>
                     </div>
-                    {exam.proctoring.webcamEnabled && <Camera className="h-4 w-4" />}
-                    {exam.proctoring.voiceDetectionEnabled && <Volume2 className="h-4 w-4" />}
+                    {exam?.proctoring?.webcamEnabled && <Camera className="h-4 w-4" />}
+                    {exam?.proctoring?.voiceDetectionEnabled && <Volume2 className="h-4 w-4" />}
                   </div>
                 </div>
               </CardHeader>
@@ -300,7 +329,7 @@ export default function TakeExamPage() {
               </CardContent>
             </Card>
 
-            {exam.proctoring.webcamEnabled && (
+            {exam?.proctoring?.webcamEnabled && (
               <Card className="mb-6">
                 <CardContent className="p-4">
                   <video

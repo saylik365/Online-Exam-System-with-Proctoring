@@ -26,36 +26,25 @@ const validateExam = [
 // Routes that don't need specific exam ID
 router.get('/', examController.getExams);
 router.post('/', [isTeacher, validateExam], examController.createExam);
-router.get('/available-students', isTeacher, examController.getAllStudents);
 
 // Routes that need specific exam ID
 router.get('/:id', examController.getExamById);
 router.put('/:id', [isTeacher, validateExam], examController.updateExam);
 router.delete('/:id', isTeacher, examController.deleteExam);
 
-// Student registration routes
-router.get('/:id/students', isTeacher, examController.getRegisteredStudents);
-router.post('/:id/students', [
-  isTeacher,
-  body('studentIds').isArray().withMessage('Student IDs must be an array'),
-  body('studentIds.*').isMongoId().withMessage('Invalid student ID'),
-  validateRequest
-], examController.addStudents);
-
-router.delete('/:id/students', [
-  isTeacher,
-  body('studentIds').isArray().withMessage('Student IDs must be an array'),
-  body('studentIds.*').isMongoId().withMessage('Invalid student ID'),
-  validateRequest
-], examController.removeStudents);
-
 // Exam participation routes
 router.post('/:id/start', isStudent, examController.startExam);
 router.post('/:id/submit', [
   isStudent,
-  body('answers').isArray().withMessage('Answers must be an array'),
+  // Update validation to expect an object for answers
+  // For example:
+  // body('answers').isObject().withMessage('Answers must be an object'),
+  // Consider more specific validation if needed, e.g., checking object keys/values
   validateRequest
 ], examController.submitExam);
 router.post('/:id/publish', isTeacher, examController.publishExam);
+
+// New endpoint to get a student's submission for a specific exam
+router.get('/:examId/submission', isStudent, examController.getStudentSubmission);
 
 module.exports = router; 

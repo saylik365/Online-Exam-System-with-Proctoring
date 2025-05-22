@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ExamStudentSelector from '@/components/ExamStudentSelector';
 import BackToDashboard from '@/components/BackToDashboard';
 import { Loader2 } from 'lucide-react';
 
@@ -358,9 +357,7 @@ export default function EditExam({ params }: { params: { id: string } }) {
                 </form>
               </TabsContent>
               
-              <TabsContent value="students">
-                <ExamStudentSelector examId={params.id} />
-              </TabsContent>
+          
               
               <TabsContent value="questions">
                 <div className="p-4 text-center text-muted-foreground">

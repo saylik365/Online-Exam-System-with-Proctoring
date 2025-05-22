@@ -62,9 +62,9 @@ const isAdmin = (req, res, next) => {
 };
 
 const isTeacher = (req, res, next) => {
-  if (!req.user || (req.user.role !== 'teacher' && req.user.role !== 'faculty')) {
-    logger.warn(`Non-teacher/faculty access attempt by user: ${req.user?._id}`);
-    return res.status(403).json({ message: 'Access denied. Teachers and faculty only.' });
+  if (!req.user || (req.user.role !== 'teacher' && req.user.role !== 'faculty' && req.user.role !== 'admin')) {
+    logger.warn(`Non-teacher/faculty/admin access attempt by user: ${req.user?._id}`);
+    return res.status(403).json({ message: 'Access denied. Teachers, faculty, and admin only.' });
   }
   next();
 };

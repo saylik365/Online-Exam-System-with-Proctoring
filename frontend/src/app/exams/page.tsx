@@ -63,6 +63,7 @@ interface Exam {
     medium: number;
     hard: number;
   };
+  hasSubmitted?: boolean;
 }
 
 export default function Exams() {
@@ -209,7 +210,7 @@ export default function Exams() {
               <CardDescription>
                 {user?.role === 'student'
                   ? 'Here are your available exams.'
-                  : 'These are exams you’ve created.'}
+                  : 'These are exams you\'ve created.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -247,19 +248,21 @@ export default function Exams() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             {user?.role === 'student' ? (
-                              <Button
-                                size="sm"
-                                onClick={() => router.push(`/exam/${exam._id}`)}
-                                disabled={
-                                  !exam.isPublished ||
-                                  new Date() < new Date(exam.startTime) ||
-                                  new Date() > new Date(exam.endTime)
-                                }
-                                className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
-                              >
-                                <Rocket className="mr-1 h-4 w-4" />
-                                Start
-                              </Button>
+                              (!exam.hasSubmitted && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => router.push(`/exams/${exam._id}/take`)}
+                                  disabled={
+                                    !exam.isPublished ||
+                                    new Date() < new Date(exam.startTime) ||
+                                    new Date() > new Date(exam.endTime)
+                                  }
+                                  className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                                >
+                                  <Rocket className="mr-1 h-4 w-4" />
+                                  Start Exam
+                                </Button>
+                              ))
                             ) : (
                               <>
                                 {!exam.isPublished && (

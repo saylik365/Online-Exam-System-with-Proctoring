@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { User } from '../models/user.model';
 import { Exam } from '../models/exam.model';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 export const getFacultyList = async (req: Request, res: Response) => {
   try {

@@ -215,5 +215,8 @@ export const examApi = {
     fetchApi(`/exams/${id}/students`, {
       method: 'DELETE',
       body: JSON.stringify({ studentIds })
-    })
+    }),
+
+  getStudentSubmission: (examId: string) =>
+    fetchApi(`/exams/${examId}/submission`)
 };
